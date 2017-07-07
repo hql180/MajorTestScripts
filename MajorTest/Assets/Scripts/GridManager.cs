@@ -52,8 +52,7 @@ public class Tile: GridObject, IHasNeighbours<Tile>
 	{
 		get { return AllNeighbours.Where(o => o.Passable); }
 	}
-
-
+	
 	//change of coordinates when moving in any direction
 	public static List<Point> NeighbourShift
 	{
@@ -360,20 +359,38 @@ public class GridManager : MonoBehaviour
 
 	void DestroyExtraGrids()
 	{
-		//var grids = hexGridGo.transform.GetComponentsInChildren<Transform>();
+		var grids = hexGridGo.transform.GetComponentsInChildren<Transform>();
 
-		//foreach (var grid in grids)
-		//{
-		//	if (grid.tag == "DestroyMe")
-		//	{
-		//		var pos = CalcGridPos(grid.transform.position);
+		foreach (var t in colliders)
+		{
+			var c = t.GetComponent<BoxCollider>();
+			if (c != null)
+			{
+				Collider[] cols = Physics.OverlapBox(c.bounds.center, Vector3.Scale(c.size,  c.transform.localScale / 2), c.transform.rotation);
 
-		//		Board.Remove(new Point((int)pos.x, (int)pos.y));
+				foreach (var p in cols)
+				{
+					p.tag = "Untagged";
+				}
+			}
+			
+		}
 
-		//		Destroy(grid.gameObject);
-		//	}
-		//}
-		
+		foreach (var grid in grids)
+		{
+
+
+				if (grid.tag == "DestroyMe")
+				{
+					var pos = CalcGridPos(grid.transform.position);
+
+					Board.Remove(new Point((int)pos.x, (int)pos.y));
+
+					Destroy(grid.gameObject);
+				}
+			
+		}
+
 	}
 
 	double calcDistance(Tile tile)
@@ -433,15 +450,12 @@ public class GridManager : MonoBehaviour
 		instance = this;
 		SetSizes();
 		CreateGrid();
+		DestroyExtraGrids();
 		GenerateAndShowPath();
 	}
 	
 	// Update is called once per frame
 	void Update ()
 	{		
-		if(Time.realtimeSinceStartup > 2)
-		{
-			DestroyExtraGrids();
-		}
 	}
 }
