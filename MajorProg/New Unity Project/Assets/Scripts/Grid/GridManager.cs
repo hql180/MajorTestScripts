@@ -6,9 +6,13 @@ public class GridManager : MonoBehaviour
 {	
 	public static GridManager instance = null;
 
-	public GameObject Line;
+	public GameObject linePrefab;
 	//List to hold "Lines" indicating the path
 	List<GameObject> path;
+
+	//Pathfinding stuff
+	Tile originTile = null;
+	Tile destinationTile = null;
 
 	public GameObject gridPrefab;
 
@@ -22,6 +26,9 @@ public class GridManager : MonoBehaviour
 	float groundHeight;
 
 	public GameObject hexGridGo;
+
+	// List grid points and related tile data
+	public Dictionary<Vector2, Tile> map = new Dictionary<Vector2, Tile>();
 
 	void SetSizes()
 	{
@@ -83,11 +90,15 @@ public class GridManager : MonoBehaviour
 	
 				hex.transform.position = CalcWorldCoord(gridPos);
 				hex.transform.parent = hexGridGo.transform;
+
+				Tile tile = new Tile(gridPos);
+
+				hex.GetComponent<CellInfo>().tile = tile;
+
+				map.Add(gridPos, tile);
 			}
 		}
 	}
-
-
 
 	void DestroyExtraGrids()
 	{
@@ -108,11 +119,47 @@ public class GridManager : MonoBehaviour
 		{
 			if (grid.tag == "DestroyMe")
 			{
+				map.Remove(grid.GetComponent<CellInfo>().gridPos);
 				Destroy(grid.gameObject);
 			}
 		}
 	}
 
+	void DrawPath(IEnumerable<Tile> path)
+	{
+		if (this.path == null)
+			this.path = new List<GameObject>();
+
+		this.path.ForEach(Destroy);
+		this.path.Clear();
+
+		GameObject lines = GameObject.Find("Lines");
+
+		if (lines == null)
+			lines = new GameObject("Lines");
+
+		foreach(Tile tile in path)
+		{
+			var line = Instantiate(linePrefab);
+			Vector2 gridPos = new Vector2(tile.X, tile.Y);
+			line.transform.position = CalcWorldCoord(gridPos);
+			this.path.Add(line);
+			line.transform.parent = lines.transform;
+		}
+	}
+
+	public void GenerateAndShowPath()
+	{
+		if(originTile == null || destinationTile == null)
+		{
+			DrawPath(new List<Tile>());
+			return;
+		}
+
+		var path = Path<Tile>.FindPath(originTile, destinationTile, Tile.distance, Tile.estimate);
+
+		DrawPath(path);
+	}
 
 	// Use this for initialization
 	void Start()
@@ -121,10 +168,40 @@ public class GridManager : MonoBehaviour
 		SetSizes();
 		CreateGrid();
 		DestroyExtraGrids();
+		foreach (var tile in map)
+		{
+			tile.Value.FindNeighbours(map);
+		}
 	}
 
 	// Update is called once per frame
 	void Update()
 	{
+		if(Input.GetMouseButtonDown(0))
+		{
+			var gridPos = CalcGridPos(GetMouseToWorld());
+			Debug.Log(gridPos);
+			map.TryGetValue(gridPos, out originTile);
+			GenerateAndShowPath();
+		}
+		if(Input.GetMouseButtonDown(1))
+		{
+			var gridPos = CalcGridPos(GetMouseToWorld());
+			Debug.Log(gridPos);
+			map.TryGetValue(gridPos, out destinationTile);
+			GenerateAndShowPath();
+		}
+
+
+	}
+
+	Vector3 GetMouseToWorld()
+	{
+		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+		RaycastHit hit;
+
+		Physics.Raycast(ray, out hit);
+		return hit.point;
 	}
 }

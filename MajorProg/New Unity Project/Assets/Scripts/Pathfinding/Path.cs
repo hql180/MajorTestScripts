@@ -44,7 +44,7 @@ public class Path<Node> : IEnumerable<Node>
 		TNode start,
 		TNode destination,
 		Func<TNode, TNode, double> distance,
-		Func<TNode, double> estimate)
+		Func<TNode, TNode, double> estimate)
 		where TNode : IHasNeighbours<TNode>
 	{
 		var closed = new HashSet<TNode>();
@@ -67,7 +67,7 @@ public class Path<Node> : IEnumerable<Node>
 			{
 				double d = distance(path.LastStep, n);
 				var newPath = path.AddStep(n, d);
-				queue.Enqueue(newPath.TotalCost + estimate(n), newPath);
+				queue.Enqueue(newPath.TotalCost + estimate(n, destination), newPath);
 			}
 		}
 		return null;

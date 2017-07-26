@@ -12,26 +12,26 @@ public class Tile : IHasNeighbours<Tile>
 
 		Passable = true;
 	}
-	
 
-	public bool Passable
-	{
-		get
-		{
-			return Passable;
-		}
-		set
-		{
-			Passable = (Empty && value);
-		}
-	}
+
+	public bool Passable;
+	//{
+	//	//get
+	//	//{
+	//	//	//return Passable;
+	//	//}
+	//	//set
+	//	//{
+	//	//	//Passable = (Empty && value);
+	//	//}
+	//}
 
 	public int X { get { return (int)location.x; } }
 
 	public int Y { get { return (int)location.y; } }
 
 
-	public bool Empty;
+	public bool Empty = true;
 
 
 	public IEnumerable<Tile> AllNeighbours { get; set; }
@@ -70,15 +70,20 @@ public class Tile : IHasNeighbours<Tile>
 		AllNeighbours = neighbours;
 	}
 
-	static double distance(Tile tile1, Tile tile2)
+	static public double distance(Tile tile1, Tile tile2)
 	{
 		// placeholder might need to change
 		return 1;
 	}
 
-	static double estimate(Tile tile, Tile destTile)
+	static public double estimate(Tile tile, Tile destTile)
 	{
 		float distanceX = Mathf.Abs(destTile.X - tile.X);
 		float distanceY = Mathf.Abs(destTile.Y - tile.Y);
+		int z1 = -(tile.X + tile.Y);
+		int z2 = -(destTile.X + destTile.Y);
+		float distanceZ = Mathf.Abs(z2 - z1);
+
+		return Mathf.Max(distanceX, distanceY, distanceZ);
 	}
 }
