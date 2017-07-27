@@ -6,64 +6,87 @@ using UnityEngine;
 
 public class Tile : IHasNeighbours<Tile>
 {
-	public Tile(Vector2 point)
+	public Tile(Vector2 point, CellInfo info)
 	{
 		location = point;
-
 		Passable = true;
+		this.info = info;
 	}
 
+	public bool Passable
+	{
+		get;
+		set;
+	}
 
-	public bool Passable;
-	//{
-	//	//get
-	//	//{
-	//	//	//return Passable;
-	//	//}
-	//	//set
-	//	//{
-	//	//	//Passable = (Empty && value);
-	//	//}
-	//}
+	Vector2 location;
+
+	public CellInfo info;
+
+	public bool Empty = true;
 
 	public int X { get { return (int)location.x; } }
 
 	public int Y { get { return (int)location.y; } }
-
-
-	public bool Empty = true;
-
-
+	
 	public IEnumerable<Tile> AllNeighbours { get; set; }
 	
-	public IEnumerable<Tile> Neighbours { get { return AllNeighbours.Where( o => (o.Passable)); } }
+	public IEnumerable<Tile> Neighbours { get {	return AllNeighbours.Where(tile => (tile.Passable)); } }
 
-	Vector2 location;
-
-	public static List<Vector2> ValidNeighbours
+	public List<Vector2> ValidNeighbours
 	{
 		get
 		{
-			return new List<Vector2>
+			if (GridManager.instance.gridType == GridType.Cube)
 			{
-				new Vector2(0, 1),
-				new Vector2(0, -1),
-				new Vector2(1, 0),
-				new Vector2(-1, 0)
-			};
+				return new List<Vector2>
+				{
+					new Vector2(0, 1),
+					new Vector2(0, -1),
+					new Vector2(1, 0),
+					new Vector2(-1, 0)
+				};
+			}
+			else if (GridManager.instance.gridType == GridType.Hex)
+			{				
+				// neighbour coord offset due to grid shift upwards on odd x grids
+				if(location.x % 2 == 0)
+				return new List<Vector2>
+				{
+					new Vector2(0, 1),
+					new Vector2(0, -1),
+					new Vector2(1, 0),
+					new Vector2(-1, 0),
+					
+					new Vector2(-1, -1),
+					new Vector2(1, -1)
+				};
+				else
+					return new List<Vector2>
+				{
+					new Vector2(0, 1),
+					new Vector2(0, -1),
+					new Vector2(1, 0),
+					new Vector2(-1, 0),
+
+					new Vector2(1, 1),
+					new Vector2(-1, 1)
+				};
+			}
+			return null;
 		}
 	}
 
-	public void FindNeighbours(Dictionary<Vector2, Tile> Board)
+	public void FindNeighbours(Dictionary<Vector2, CellInfo> map)
 	{
 		List<Tile> neighbours = new List<Tile>();
 
 		foreach(var point in ValidNeighbours)
 		{
 			Vector2 neighbour = location + point;
-			if(Board.ContainsKey(neighbour))
+			if(map.ContainsKey(neighbour))
 			{
-				neighbours.Add(Board[neighbour]);
+				neighbours.Add(map[neighbour].tile);
 			}
 		}
 
