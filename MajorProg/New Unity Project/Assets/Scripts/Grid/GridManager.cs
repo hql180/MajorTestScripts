@@ -59,23 +59,17 @@ public class GridManager : MonoBehaviour
 	{
 		if (Input.GetMouseButtonDown(0))
 		{
-			var gridPos = CalcGridPos(GetMouseToWorld());
+			var gridPos = GetGridPos(GetMouseToWorld());
 			Debug.Log(gridPos);
 			map.TryGetValue(gridPos, out originTile);
 			GenerateAndShowPath();
 		}
 		if (Input.GetMouseButtonDown(1))
 		{
-			var gridPos = CalcGridPos(GetMouseToWorld());
+			var gridPos = GetGridPos(GetMouseToWorld());
 			Debug.Log(gridPos);
 			map.TryGetValue(gridPos, out destinationTile);
 			GenerateAndShowPath();
-		}
-		if (Input.GetMouseButtonDown(2))
-		{
-			var gridPos = CalcGridPos(GetMouseToWorld());
-			Debug.Log(gridPos);
-			Range(gridPos, (int)tempRange);
 		}
 	}
 
@@ -117,7 +111,7 @@ public class GridManager : MonoBehaviour
 		return initPos;
 	}
 
-	Vector3 CalcWorldCoord(Vector2 gridPos)
+	public Vector3 CalcWorldCoord(Vector2 gridPos)
 	{
 		Vector3 initPos = CalcInitPos();
 
@@ -137,13 +131,12 @@ public class GridManager : MonoBehaviour
 			{
 				z += gridHeight * 0.5f;
 			}
-
 		}
 
 		return new Vector3(x, 0, z);
 	}
 
-	public Vector2 CalcGridPos(Vector3 coord)
+	public Vector2 GetGridPos(Vector3 coord)
 	{
 		Vector3 initPos = CalcInitPos();
 		Vector2 gridPos = new Vector2();
@@ -245,7 +238,7 @@ public class GridManager : MonoBehaviour
 		}
 	}
 
-	void DrawPath(IEnumerable<Tile> path)
+	public void DrawPath(IEnumerable<Tile> path)
 	{
 		if (this.path == null)
 			this.path = new List<GameObject>();
@@ -281,14 +274,18 @@ public class GridManager : MonoBehaviour
 		DrawPath(path);
 	}
 
-	Vector3 GetMouseToWorld()
+	public static Vector3 GetMouseToWorld()
 	{
 		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
 		RaycastHit hit;
 
+		Debug.DrawRay(ray.origin, ray.direction, Color.green);
+
+
 		Physics.Raycast(ray, out hit);
-		return hit.point;
+
+		return hit.point + ray.direction * 3.5f;
 	}
 
 	void ShowNeightbours(Vector2 gridPos)
@@ -306,19 +303,19 @@ public class GridManager : MonoBehaviour
 
 		CellInfo tile;
 
-		map.TryGetValue(gridPos, out tile);
-
-		//Debug.Log(tile.Neighbours);
-		foreach (var t in tile.tile.AllNeighbours)
+		if (map.TryGetValue(gridPos, out tile))
 		{
-			var line = Instantiate(linePrefab);
-			Vector2 pos = new Vector2(t.X, t.Y);
-			line.transform.position = CalcWorldCoord(pos);
-			this.path.Add(line);
+			foreach (var t in tile.tile.AllNeighbours)
+			{
+				var line = Instantiate(linePrefab);
+				Vector2 pos = new Vector2(t.X, t.Y);
+				line.transform.position = CalcWorldCoord(pos);
+				this.path.Add(line);
+			}
 		}
 	}
 
-	Vector2 CubeCoordToOddQ(Vector3 cube)
+	public static Vector2 CubeCoordToOddQ(Vector3 cube)
 	{
 		float col = cube.x;
 		// using bitwise operator to find odd numbers
@@ -326,7 +323,7 @@ public class GridManager : MonoBehaviour
 		return new Vector2(col, row);
 	}
 
-	Vector3 ToCubeCoord(Vector2 gridPos)
+	public static Vector3 ToCubeCoord(Vector2 gridPos)
 	{
 		float x = gridPos.x;
 		float z = gridPos.y - (gridPos.x - ((int)gridPos.x & 1)) / 2;
@@ -334,7 +331,7 @@ public class GridManager : MonoBehaviour
 		return new Vector3(x, y, z);
 	}
 
-	void Range(Vector2 gridPos, int range)
+	public void Range(CellInfo gridInfo, int range)
 	{
 		List<CellInfo> traversable = new List<CellInfo>();
 
@@ -348,15 +345,13 @@ public class GridManager : MonoBehaviour
 
 		visted = new HashSet<CellInfo>();
 
-		CellInfo start;
-		if (map.TryGetValue(gridPos, out start))
+		if (gridInfo)
 		{
-
-			visted.Add(start);
+			visted.Add(gridInfo);
 
 			var fringe = new HashSet<CellInfo>();
 
-			foreach (var n in start.tile.Neighbours)
+			foreach (var n in gridInfo.tile.Neighbours)
 			{
 				fringe.Add(n.info);
 			}
@@ -378,7 +373,7 @@ public class GridManager : MonoBehaviour
 					}
 				}
 				fringe = next;
-				range--;
+				--range;
 			}
 
 			foreach (var tile in visted)
@@ -386,5 +381,40 @@ public class GridManager : MonoBehaviour
 				tile.rend.material.color = tile.green;
 			}
 		}
+	}
+
+	public CellInfo GetGridAtMouse()
+	{
+		CellInfo info;
+		if(map.TryGetValue(GetGridPos(GetMouseToWorld()), out info))
+		{
+			return info;
+		}
+
+		return null;
+	}
+
+	public CellInfo GetGridFromWorldPos(Vector3 pos)
+	{
+		CellInfo grid;
+		if (map.TryGetValue( GetGridPos(pos), out grid))
+		{
+			return grid;
+		}
+
+		return null;
+	}
+
+	public void ClearSelections()
+	{
+		if (visted != null)
+		{
+			foreach (var cell in visted)
+			{
+				cell.rend.material.color = cell.original;
+			}
+		}
+
+		path = null;
 	}
 }

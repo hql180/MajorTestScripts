@@ -31,7 +31,13 @@ public class Tile : IHasNeighbours<Tile>
 	
 	public IEnumerable<Tile> AllNeighbours { get; set; }
 	
-	public IEnumerable<Tile> Neighbours { get {	return AllNeighbours.Where(tile => (tile.Passable)); } }
+	public IEnumerable<Tile> Neighbours
+	{
+		get
+		{
+			return AllNeighbours.Where(o => (o.Passable && o.info.Passable(UnitManager.instance.selectedUnit)));
+		}
+	}
 
 	public List<Vector2> ValidNeighbours
 	{
